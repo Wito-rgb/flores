@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Ramo de Girasoles</title>
+    <style>
+        body {
+            margin: 0;
+            background: #0a1118;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="c" width="500" height="600" style="border-radius:16px;"></canvas>
+    <script>
+        const canvas = document.getElementById('c');
+        const ctx = canvas.getContext('2d');
+        const W = canvas.width, H = canvas.height;
+
+        const flowers = [
+            { x: 200, y: 210, r: 58, delay: 1200 },
+            { x: 300, y: 170, r: 62, delay: 1500 },
+            { x: 390, y: 210, r: 55, delay: 1800 },
+            { x: 155, y: 300, r: 50, delay: 900 },
+            { x: 430, y: 310, r: 48, delay: 2100 },
+        ];
+
+        const BASE_X = 290, BASE_Y = 560;
+
+        function stemEnd(f) {
+            const dx = f.x - BASE_X, dy = f.y - BASE_Y;
+            const len = Math.sqrt(dx * dx + dy * dy);
+            return { x: f.x - dx / len * f.r * 0.6, y: f.y - dy / len * f.r * 0.6 };
+        }
+
+        function drawStars() {
+            const stars = [
+                [60, 40], [120, 80], [200, 30], [500, 50], [560, 110], [430, 25],
+                [80, 150], [580, 180], [30, 280], [640, 320], [50, 400], [620, 440],
+                [150, 110], [490, 140], [320, 60], [660, 60], [20, 200]
+            ];
+            ctx.fillStyle = 'rgba(255,255,255,0.6)';
+            stars.forEach(([x, y]) => {
+                ctx.beginPath();
+                ctx.arc(x, y, 1, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        function drawFoliage() {
+            const leaves = [
+                { x: 210, y: 535, rx: 85, ry: 32, c: '#1a5c0e' },
+                { x: 370, y: 540, rx: 85, ry: 30, c: '#1a5c0e' },
+                { x: 290, y: 550, rx: 65, ry: 28, c: '#236614' },
+                { x: 145, y: 520, rx: 30, ry: 22, c: '#1e6010' },
+                { x: 435, y: 522, rx: 30, ry: 22, c: '#1e6010' },
+                { x: 105, y: 538, rx: 22, ry: 18, c: '#174e0a' },
+                { x: 470, y: 540, rx: 22, ry: 18, c: '#174e0a' },
+            ];
+            leaves.forEach(l => {
+                ctx.save();
+                ctx.translate(l.x, l.y);
+                ctx.fillStyle = l.c;
+                ctx.beginPath();
+                ctx.ellipse(0, 0, l.rx, l.ry, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            });
+            ctx.save(); ctx.translate(80, 500); ctx.rotate(0.5);
+            ctx.fillStyle = '#236614'; ctx.beginPath(); ctx.ellipse(0, 0, 32, 11, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.restore();
+            ctx.save(); ctx.translate(55, 475); ctx.rotate(0.7);
+            ctx.fillStyle = '#1a5c0e'; ctx.beginPath(); ctx.ellipse(0, 0, 26, 9, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.restore();
+            ctx.save(); ctx.translate(500, 500); ctx.rotate(-0.5);
+            ctx.fillStyle = '#236614'; ctx.beginPath(); ctx.ellipse(0, 0, 32, 11, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.restore();
+            ctx.save(); ctx.translate(525, 475); ctx.rotate(-0.7);
+            ctx.fillStyle = '#1a5c0e'; ctx.beginPath(); ctx.ellipse(0, 0, 26, 9, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.restore();
+        }
+
+        function drawStem(f, prog) {
+            const end = stemEnd(f);
+            const cx = BASE_X + (end.x - BASE_X) * prog;
+            const cy = BASE_Y + (end.y - BASE_Y) * prog;
+            ctx.strokeStyle = '#2d7a1c';
+            ctx.lineWidth = 5;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(BASE_X, BASE_Y);
+            ctx.lineTo(cx, cy);
+            ctx.stroke();
+        }
+
+        function drawLeaf(f, prog) {
+            if (prog < 0.5) return;
+            const lp = (prog - 0.5) * 2;
+            const end = stemEnd(f);
+            const mx = (BASE_X + end.x) / 2;
+            const my = (BASE_Y + end.y) / 2;
+            ctx.save();
+            ctx.translate(mx, my);
+            const angle = Math.atan2(end.y - BASE_Y, end.x - BASE_X) + Math.PI / 2;
+            ctx.rotate(angle + 0.4);
+            ctx.scale(lp, lp);
+            ctx.fillStyle = '#3a9425';
+            ctx.beginPath();
+            ctx.ellipse(0, 0, 22, 9, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function drawGlow(f, alpha) {
+            const g = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, f.r * 1.6);
+            g.addColorStop(0, `rgba(255,228,50,${0.35 * alpha})`);
+            g.addColorStop(1, 'rgba(255,228,50,0)');
+            ctx.fillStyle = g;
+            ctx.beginPath();
+            ctx.arc(f.x, f.y, f.r * 1.6, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function drawSunflower(f, scale) {
+            const r = f.r;
+            ctx.save();
+            ctx.translate(f.x, f.y);
+            ctx.scale(scale, scale);
+
+            const g = ctx.createRadialGradient(0, 0, 0, 0, 0, r * 1.5);
+            g.addColorStop(0, 'rgba(255,230,60,0.4)');
+            g.addColorStop(1, 'rgba(255,230,60,0)');
+            ctx.fillStyle = g;
+            ctx.beginPath(); ctx.arc(0, 0, r * 1.5, 0, Math.PI * 2); ctx.fill();
+
+            const nPetals = 14;
+            for (let i = 0; i < nPetals; i++) {
+                ctx.save();
+                ctx.rotate((i / nPetals) * Math.PI * 2);
+                ctx.fillStyle = '#f5d020';
+                ctx.beginPath();
+                ctx.ellipse(0, -r * 0.82, r * 0.22, r * 0.42, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+            for (let i = 0; i < nPetals; i++) {
+                ctx.save();
+                ctx.rotate(((i + 0.5) / nPetals) * Math.PI * 2);
+                ctx.fillStyle = '#e8c010';
+                ctx.beginPath();
+                ctx.ellipse(0, -r * 0.66, r * 0.17, r * 0.34, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+
+            ctx.fillStyle = '#7a4010';
+            ctx.beginPath(); ctx.arc(0, 0, r * 0.42, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#5e3008';
+            ctx.beginPath(); ctx.arc(0, 0, r * 0.38, 0, Math.PI * 2); ctx.fill();
+
+            ctx.strokeStyle = '#4a2405';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath(); ctx.arc(0, 0, r * 0.28, 0, Math.PI * 2); ctx.stroke();
+            ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.arc(0, 0, r * 0.17, 0, Math.PI * 2); ctx.stroke();
+
+            const nd = 8;
+            ctx.fillStyle = '#3d1d04';
+            for (let i = 0; i < nd; i++) {
+                const a = (i / nd) * Math.PI * 2;
+                ctx.beginPath();
+                ctx.arc(Math.cos(a) * r * 0.28, Math.sin(a) * r * 0.28, 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.beginPath(); ctx.arc(0, 0, r * 0.08, 0, Math.PI * 2); ctx.fill();
+            ctx.restore();
+        }
+
+        let start = null;
+        const STEM_DUR = 900;
+        let glowPhase = 0;
+
+        function draw(ts) {
+            if (!start) start = ts;
+            const elapsed = ts - start;
+
+            ctx.clearRect(0, 0, W, H);
+            ctx.fillStyle = '#0d1822';
+            ctx.fillRect(0, 0, W, H);
+
+            drawStars();
+            glowPhase += 0.02;
+
+            flowers.forEach(f => {
+                const stemElapsed = elapsed - 200;
+                let prog = Math.min(1, Math.max(0, stemElapsed / STEM_DUR));
+                prog = prog < 0.5 ? 2 * prog * prog : -1 + (4 - 2 * prog) * prog;
+                drawStem(f, prog);
+                drawLeaf(f, prog);
+            });
+
+            drawFoliage();
+
+            flowers.forEach(f => {
+                const fElapsed = elapsed - f.delay;
+                if (fElapsed < 0) return;
+                let sc = Math.min(1, fElapsed / 500);
+                if (sc < 1) {
+                    sc = sc < 0.5 ? 4 * sc * sc * sc : 1 - Math.pow(-2 * sc + 2, 3) / 2;
+                    sc = Math.min(1.12, sc * 1.12);
+                    if (fElapsed > 400) sc = 1 + (sc - 1) * (1 - (fElapsed - 400) / 100);
+                }
+                drawGlow(f, 0.7 + 0.3 * Math.sin(glowPhase + f.delay));
+                drawSunflower(f, Math.min(sc, 1));
+            });
+
+            requestAnimationFrame(draw);
+        }
+
+        requestAnimationFrame(draw);
+    </script>
+</body>
+
+</html>
